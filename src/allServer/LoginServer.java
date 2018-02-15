@@ -11,21 +11,21 @@ import java.sql.SQLException;
 
 //[登陆请求管理线程],3838端口管理登录请求
 public class LoginServer implements Runnable {
-	ServerSocket ss = null;// 服务端Socket,用来建立Socket对象
-	Socket sckt = null;// Socket连接对象
+	// 服务端Socket,用来建立Socket对象
+	ServerSocket ss = null;
+	// Socket连接对象
+	Socket sckt = null;
+	// sql连接对象
+	java.sql.Connection con;
+	// PreparedStatement是Statement的子类,也是一种sql语句对象
+	java.sql.PreparedStatement ps;
 
 	@Override
 	public void run() {
-		// 准备工作:加载数据库驱动
+		// 准备工作:加载MySQL驱动,准备sql语句对象,准备绑定端口的ServerSocket对象
 		try {
 			// JVM加载JDBC驱动
 			Class.forName("com.mysql.jdbc.Driver");
-			// sql连接对象
-			java.sql.Connection con;
-			// PreparedStatement是Statement的子类,也是一种sql语句对象
-			java.sql.PreparedStatement ps;
-			// 结果集
-			ResultSet rs;
 			// 连接信息字符串,MySQL数据库服务器的默认端口号是3306
 			// jdbc:mysql://ip地址:端口号/要连接的数据库名?其它选项
 			// useSSL参数指明数据通道是否要加密处理
@@ -54,7 +54,7 @@ public class LoginServer implements Runnable {
 				sckt = ss.accept();// 阻塞以等待连接
 				System.out.println("[+]客户端地址:" + sckt.getInetAddress());
 				// 为这个新客户建立[登陆请求处理线程]对象,启动专为这个客户服务的线程
-				new IWannaLogin(sckt).start();
+				new IWannaLogin(sckt, ps).start();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -71,10 +71,15 @@ class IWannaLogin extends Thread {
 	DataOutputStream dos;
 	// 布尔值指示是否登录成功,初始为否
 	boolean success = false;
+	// 备好的sql语句对象
+	java.sql.PreparedStatement ps;
+	// 查询返回的结果集,每次查询都在给它赋值
+	ResultSet rs;
 
-	// 构造器
-	IWannaLogin(Socket sckt) {
+	// 构造器(Socket连接对象,PreparedStatement备好的sql语句对象)
+	IWannaLogin(Socket sckt, java.sql.PreparedStatement ps) {
 		this.sckt = sckt;
+		this.ps = ps;
 	}
 
 	@Override
@@ -90,17 +95,39 @@ class IWannaLogin extends Thread {
 				// 确保其消息格式,以"[login]"开头才是要登录
 				if (str.startsWith("[login]") == false)
 					return;// 如果对方Socket发来的消息格式不对,这个连接就是错误危险的,直接结束该线程
-				// System.out.println(str);
-				// if (str.endsWith("3838438")) {
+				// 截取出账户名和密码
 				String nm = str.substring(str.indexOf("]") + 1, str.indexOf("#"));
 				String pswd = str.substring(str.indexOf("#") + 1);
-				System.out.println(nm + " " + pswd);
-				success = true;
-				// }
+				// PreparedStatement对象的setString方法定义了字符串中第n个"?"字符的替换
+				ps.setString(1, nm);
+				ps.setString(2, pswd);
+				// 返回结果集,注意PreparedStatement对象的执行方法不需要参数
+				// 因为sql语句就在PreparedStatement对象中
+				rs = ps.executeQuery();
+				// 对返回的结果集的处理,查询结果非空时说明账密正确,允许登录
+				// 同时rs.next()下移一行到达了第一行
+				// 实际上查询结果只能有0行或1行,因为不可能两个相同账密的人
+				// 甚至在主键UsrNum上就不可能相同
+				if (rs.next() == true) {
+					success = true;// 非空,允许登录,下一个while将不执行
+					String Name = rs.getString(3);// 获取这(唯一行)用户的用户名
+					int HeadID = rs.getInt(4);// 头像的ID号
+					// 拼成字符串,发送给客户端
+					this.dos.writeUTF("[v]用户名:" + Name + "," + "头像ID" + HeadID);
+				}
+				// 结果集为空,说明账密在数据库中没有查询到匹配项,登录失败
+				else {
+					// 告诉客户端登录失败
+					this.dos.writeUTF("[x]账户名或密码错误");
+				}
 			}
+			// 运行至此,说明成功登录了服务器
+			System.out.println("[v]成功登录来自:" + sckt.getInetAddress());
 		} catch (IOException e) {
 			// 当客户端还没点过登录按钮,就关闭了窗口或者以其它方式强行结束了客户端程序时
 			System.out.println("[-]放弃登录来自:" + sckt.getInetAddress());
+		} catch (SQLException e) {
+			e.printStackTrace();// PreparedStatement对象相关
 		}
 	}
 }
