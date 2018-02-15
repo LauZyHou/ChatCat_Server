@@ -113,7 +113,7 @@ class IWannaLogin extends Thread {
 					String Name = rs.getString(3);// 获取这(唯一行)用户的用户名
 					int HeadID = rs.getInt(4);// 头像的ID号
 					// 拼成字符串,发送给客户端
-					this.dos.writeUTF("[v]用户名:" + Name + "," + "头像ID" + HeadID);
+					this.dos.writeUTF("[v]#用户名:" + Name + "#头像ID:" + HeadID);
 				}
 				// 结果集为空,说明账密在数据库中没有查询到匹配项,登录失败
 				else {
