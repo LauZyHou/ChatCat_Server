@@ -18,7 +18,9 @@ public class LoginServer implements Runnable {
 	// sql连接对象
 	java.sql.Connection con;
 	// PreparedStatement是Statement的子类,也是一种sql语句对象
-	java.sql.PreparedStatement ps;
+	java.sql.PreparedStatement ps_smpl;// 查询SmplMsg表,用于验证登录
+	java.sql.PreparedStatement ps_frnd;// 查询FrndMsg表,用于在登录后提供好友列表
+	java.sql.PreparedStatement ps_prmy_smpl;// 只用主键(账号)查询SmplMsg表,用于获取好友信息
 
 	@Override
 	public void run() {
@@ -37,7 +39,10 @@ public class LoginServer implements Runnable {
 			con = DriverManager.getConnection(uri, user, password);
 			// 使用PreparedStatement时,其构造方法中直接传入要执行的sql语句,暂时不确定值的地方使用问号
 			// 所以execute(),executeQuery()和executeUpdate()不再需要参数
-			ps = con.prepareStatement("SELECT * FROM SmplMsg WHERE UsrNum=? AND Passwd=?");
+			ps_smpl = con.prepareStatement("SELECT * FROM SmplMsg WHERE UsrNum=? AND Passwd=?");
+			ps_frnd = con.prepareStatement(
+					"SELECT Usr1 FROM FrndMsg WHERE Usr2=? " + "UNION " + "SELECT Usr2 FROM FrndMsg WHERE Usr1=?");
+			ps_prmy_smpl = con.prepareStatement("SELECT * FROM SmplMsg WHERE UsrNum=?");
 			// 服务器端Socket,用来在后面循环中建立Socket对象
 			ss = new ServerSocket(3838); // 登录服务始终使用3838端口,不必写入循环体中
 			System.out.println("[#]开始等待客户端连接...");
@@ -54,7 +59,7 @@ public class LoginServer implements Runnable {
 				sckt = ss.accept();// 阻塞以等待连接
 				System.out.println("[+]客户端地址:" + sckt.getInetAddress());
 				// 为这个新客户建立[登陆请求处理线程]对象,启动专为这个客户服务的线程
-				new IWannaLogin(sckt, ps).start();
+				new IWannaLogin(sckt, ps_smpl, ps_frnd, ps_prmy_smpl).start();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -72,16 +77,22 @@ class IWannaLogin extends Thread {
 	// 布尔值指示是否登录成功,初始为否
 	boolean success = false;
 	// 备好的sql语句对象
-	java.sql.PreparedStatement ps;
+	java.sql.PreparedStatement ps_smpl;
+	java.sql.PreparedStatement ps_frnd;
+	java.sql.PreparedStatement ps_prmy_smpl;
 	// 查询返回的结果集,每次查询都在给它赋值
 	ResultSet rs;
 
 	// 构造器(Socket连接对象,PreparedStatement备好的sql语句对象)
-	IWannaLogin(Socket sckt, java.sql.PreparedStatement ps) {
+	IWannaLogin(Socket sckt, java.sql.PreparedStatement ps_smpl, java.sql.PreparedStatement ps_frnd,
+			java.sql.PreparedStatement ps_prmy_smpl) {
 		this.sckt = sckt;
-		this.ps = ps;
+		this.ps_smpl = ps_smpl;// 验证登录
+		this.ps_frnd = ps_frnd;// 好友列表
+		this.ps_prmy_smpl = ps_prmy_smpl;// 主键索引查询(好友信息)
 	}
 
+	// [登陆请求处理线程]子线程运行
 	@Override
 	public void run() {
 		try {
@@ -99,11 +110,11 @@ class IWannaLogin extends Thread {
 				String nm = str.substring(str.indexOf("]") + 1, str.indexOf("#"));
 				String pswd = str.substring(str.indexOf("#") + 1);
 				// PreparedStatement对象的setString方法定义了字符串中第n个"?"字符的替换
-				ps.setString(1, nm);
-				ps.setString(2, pswd);
+				ps_smpl.setString(1, nm);
+				ps_smpl.setString(2, pswd);
 				// 返回结果集,注意PreparedStatement对象的执行方法不需要参数
 				// 因为sql语句就在PreparedStatement对象中
-				rs = ps.executeQuery();
+				rs = ps_smpl.executeQuery();
 				// 对返回的结果集的处理,查询结果非空时说明账密正确,允许登录
 				// 同时rs.next()下移一行到达了第一行
 				// 实际上查询结果只能有0行或1行,因为不可能两个相同账密的人
@@ -112,8 +123,26 @@ class IWannaLogin extends Thread {
 					success = true;// 非空,允许登录,下一个while将不执行
 					String Name = rs.getString(3);// 获取这(唯一行)用户的用户名
 					int HeadID = rs.getInt(4);// 头像的ID号
-					// 拼成字符串,发送给客户端
-					this.dos.writeUTF("[v]#用户名:" + Name + "#头像ID:" + HeadID);
+					String str_send = "[v]#用户名:" + Name + "#头像ID:" + HeadID;// 拼给要发送的字符串
+					// 当账密正确时,即在这个if块内,对好友进行查询,返回好友列表
+					ps_frnd.setString(1, nm);// 替换'?'
+					ps_frnd.setString(2, nm);// 替换'?'
+					ResultSet rs_frnd = ps_frnd.executeQuery();// 执行查询
+					// 再拿这个好友列表中的每一项去查询SmplMsg表,得到好友的(账号,网名,头像ID)投影
+					ResultSet rs_prmy_smpl = null;// 暂存每次的查询结果
+					while (rs_frnd.next() == true) {
+						int frndUsrNum = rs_frnd.getInt(1);// 从好友列表中只能得到该好友的账号
+						ps_prmy_smpl.setString(1, "" + frndUsrNum);// 把这个索引替换'?'处
+						rs_prmy_smpl = ps_prmy_smpl.executeQuery();// 执行查询得到结果集
+						// 确保存在,只要数据库表管理的好这里if可以去掉!
+						if (rs_prmy_smpl.next() == true) {
+							String frndName = rs_prmy_smpl.getString(3);// 第3列:该好友的网名
+							int frndHeadID = rs_prmy_smpl.getInt(4);// 第4列:该好友的头像ID
+							str_send = str_send + "#" + frndUsrNum + "," + frndName + "," + frndHeadID;// 拼给要发送的字符串
+						}
+					}
+					// 把最后拼出来的要发送的字符串发送给客户端
+					this.dos.writeUTF(str_send);
 				}
 				// 结果集为空,说明账密在数据库中没有查询到匹配项,登录失败
 				else {
