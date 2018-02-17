@@ -152,6 +152,9 @@ class IWannaLogin extends Thread {
 			}
 			// 运行至此,说明成功登录了服务器
 			System.out.println("[v]成功登录来自:" + sckt.getInetAddress());
+			// 在[登陆请求处理线程]子线程结束之前,为这个用户新开一个[核心处理线程]子线程
+			// 传入连接好的Socket对象,以保留这个验证登录成功的TCP连接
+			new DealWithKernel(sckt).start();
 		} catch (IOException e) {
 			// 当客户端还没点过登录按钮,就关闭了窗口或者以其它方式强行结束了客户端程序时
 			System.out.println("[-]放弃登录来自:" + sckt.getInetAddress());
