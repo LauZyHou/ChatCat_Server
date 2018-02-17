@@ -1,12 +1,15 @@
 package allServer;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 
 //主类
 public class Main {
 	// 主类中的静态哈希映射表,记录登录者的<账号,ip地址>映射,在主类加载时即刻加载
 	// 因为服务器一关,势必所有用户掉线,所以这个映射只要放在内存里而不需写进数据库
 	public static HashMap<String, String> hm_usrTOip = new HashMap<String, String>();
+	// 第二张哈希表记录<目标用户账号,发送给该用户的消息List>
+	public static HashMap<String, LinkedList<String>> hm_usrTOmsg = new HashMap<String, LinkedList<String>>();
 
 	public static void main(String[] args) {
 		// [登陆请求管理线程]

@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.LinkedList;
 
 //[登陆请求管理线程],3838端口管理登录请求
 public class LoginServer implements Runnable {
@@ -152,12 +153,14 @@ class IWannaLogin extends Thread {
 					this.dos.writeUTF("[x]账户名或密码错误");
 				}
 			}
-			// 运行至此,说明成功登录了服务器
+			// 运行至此,说明成功登录了服务器,要为该用户的服务做一些准备工作
 			System.out.println("[v]成功登录来自:" + sckt.getInetAddress());
-			// 将在线状态记录在主类的HashMap里,ip地址要去掉头部的斜杠'/'
+			// 1:将在线状态记录在主类的HashMap里,ip地址要去掉头部的斜杠'/'
 			Main.hm_usrTOip.put(nm, sckt.getInetAddress().toString().substring(1));
 			System.out.println("[v]当前在线状态:" + Main.hm_usrTOip);
-			// 在[登陆请求处理线程]子线程结束之前,为这个用户新开一个[核心处理线程]子线程
+			// 2:在接收消息用的主类的HashMap里引入这一项,新建一个他的消息链表
+			Main.hm_usrTOmsg.put(nm, new LinkedList<String>());
+			// 3:在[登陆请求处理线程]子线程结束之前,为这个用户新开一个[客户消息处理线程]子线程
 			// 传入连接好的Socket对象,以保留这个验证登录成功的TCP连接
 			new DealWithKernel(sckt).start();
 		} catch (IOException e) {
