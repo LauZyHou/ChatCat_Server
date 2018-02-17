@@ -1,11 +1,16 @@
 package allServer;
 
-//在主类中建立两个线程,一个用来管理登陆者,一个用来管理和其他人通信
+import java.util.HashMap;
+
+//主类
 public class Main {
+	// 主类中的静态哈希映射表,记录登录者的<账号,ip地址>映射,在主类加载时即刻加载
+	// 因为服务器一关,势必所有用户掉线,所以这个映射只要放在内存里而不需写进数据库
+	public static HashMap<String, String> hm_usrTOip = new HashMap<String, String>();
 
 	public static void main(String[] args) {
-		// [登陆请求管理线程],[单独通信线程]
-		Thread thrd_lgn, thrd_cht;
+		// [登陆请求管理线程]
+		Thread thrd_lgn;
 
 		// [登陆请求管理线程]的目标对象
 		LoginServer ls = new LoginServer();

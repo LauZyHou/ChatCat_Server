@@ -95,6 +95,8 @@ class IWannaLogin extends Thread {
 	// [登陆请求处理线程]子线程运行
 	@Override
 	public void run() {
+		String nm = null;// 账户名
+		String pswd = null;// 密码
 		try {
 			// 用Socket连接对象去初始化输入输出流,将其与客户端输出输入连接
 			this.dis = new DataInputStream(sckt.getInputStream());
@@ -107,8 +109,8 @@ class IWannaLogin extends Thread {
 				if (str.startsWith("[login]") == false)
 					return;// 如果对方Socket发来的消息格式不对,这个连接就是错误危险的,直接结束该线程
 				// 截取出账户名和密码
-				String nm = str.substring(str.indexOf("]") + 1, str.indexOf("#"));
-				String pswd = str.substring(str.indexOf("#") + 1);
+				nm = str.substring(str.indexOf("]") + 1, str.indexOf("#"));
+				pswd = str.substring(str.indexOf("#") + 1);
 				// PreparedStatement对象的setString方法定义了字符串中第n个"?"字符的替换
 				ps_smpl.setString(1, nm);
 				ps_smpl.setString(2, pswd);
@@ -152,6 +154,9 @@ class IWannaLogin extends Thread {
 			}
 			// 运行至此,说明成功登录了服务器
 			System.out.println("[v]成功登录来自:" + sckt.getInetAddress());
+			// 将在线状态记录在主类的HashMap里,ip地址要去掉头部的斜杠'/'
+			Main.hm_usrTOip.put(nm, sckt.getInetAddress().toString().substring(1));
+			System.out.println("[v]当前在线状态:" + Main.hm_usrTOip);
 			// 在[登陆请求处理线程]子线程结束之前,为这个用户新开一个[核心处理线程]子线程
 			// 传入连接好的Socket对象,以保留这个验证登录成功的TCP连接
 			new DealWithKernel(sckt).start();
