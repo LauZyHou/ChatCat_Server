@@ -35,6 +35,11 @@ public class DealWithKernel extends Thread {
 				s = dis.readUTF();
 				System.out.println("[+][接收]" + s);// 测试输出
 				dos.writeUTF("[服务器端]接收到了!");
+				// 客户要下线,发来了"[bye]"+自己的账户名
+				if (s.startsWith("[bye]")) {
+					// 在哈希表中去掉这个映射,表示这个用户已经不在线
+					Main.hm_usrTOip.remove(s.substring(s.indexOf("]") + 1));
+				}
 			}
 		} catch (IOException e) {
 			// 该客户端关闭时会发生此异常
