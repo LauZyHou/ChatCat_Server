@@ -64,6 +64,7 @@ public class DealWithKernel extends Thread {
 		if (Main.hm_usrTOip.get(str_to) != null) {
 			// 目标用户在线时,把消息写入内存中主类第二张静态哈希表的LinkedList里
 			Main.hm_usrTOmsg.get(str_to).add(str_frm + "\n\n" + str_msg);// 因为用户没法换行,所以用换行符分隔
+			Main.hm_usrTOthrd.get(str_to).interrupt();// 打断它的sleep(),让它立即为用户处理消息
 		} else {
 			System.out.println("[x]目标用户不在线");
 		}

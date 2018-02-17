@@ -160,7 +160,11 @@ class IWannaLogin extends Thread {
 			System.out.println("[v]当前在线状态:" + Main.hm_usrTOip);
 			// 2:在接收消息用的主类的HashMap里引入这一项,新建一个他的消息链表
 			Main.hm_usrTOmsg.put(nm, new LinkedList<String>());
-			// 3:在[登陆请求处理线程]子线程结束之前,为这个用户新开一个[客户消息处理线程]子线程
+			// 3:在取出内存缓存消息用的主类的HashMap里引入这一项
+			DealWithMem dwm = new DealWithMem(sckt, nm);// 新建一个[内存消息接收线程]子线程
+			dwm.start();// 启动
+			Main.hm_usrTOthrd.put(nm, dwm);// 将引用传入
+			// 4:在[登陆请求处理线程]子线程结束之前,为这个用户新开一个[客户消息处理线程]子线程
 			// 传入连接好的Socket对象,以保留这个验证登录成功的TCP连接
 			new DealWithKernel(sckt).start();
 		} catch (IOException e) {
