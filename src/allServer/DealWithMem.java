@@ -35,20 +35,20 @@ public class DealWithMem extends Thread {
 		while (true) {
 			// 从第二张哈希表里拿出自己的那份消息链表
 			LinkedList<String> ll = Main.hm_usrTOmsg.get(nm);
-			// 判断自己的消息链表是否非空,非空时才发里面的消息,
-			// 注意,不是做!=null判断,!=null时是在线而不是有消息
-			if (!ll.isEmpty()) {
-				// 对于消息链表中的每个消息"消息来源\n\n消息内容"
-				for (String s : ll) {
-					// 发送给客户端,由客户端自己对不同的来源做不同的处理
-					try {
+			try {
+				// 判断自己的消息链表是否非空,非空时才发里面的消息
+				// 注意,不是做!=null判断,!=null时是在线而不是有消息
+				if (!ll.isEmpty()) {
+					// 对于消息链表中的每个消息"消息来源\n\n消息内容"
+					for (String s : ll) {
+						// 发送给客户端,由客户端自己对不同的来源做不同的处理
 						dos.writeUTF(s);
-					} catch (IOException e) {
-						e.printStackTrace();
 					}
+					// 处理完成把自己的消息链表清空
+					ll.clear();
 				}
-				// 处理完成把自己的消息链表清空
-				ll.clear();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 			// 之所以要做第三张哈希表就是因为这个sleep(),
 			// 放进哈希表里让这个线程的引用对DealWithKernel可见,则它可以在写完后立即interrupt()这个线程

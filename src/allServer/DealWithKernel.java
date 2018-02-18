@@ -47,10 +47,14 @@ public class DealWithKernel extends Thread {
 				}
 			}
 		} catch (IOException e) {
-			// 该客户端关闭时会发生此异常
-			System.out.println("[-]" + nm + sckt.getInetAddress() + "断开连接");
 			// 在第一张哈希表中去掉这个用户,表示这个用户已经不在线
 			Main.hm_usrTOip.remove(nm);
+			// 从第三张哈希表中找到这个线程的引用,立即终止它!
+			Main.hm_usrTOthrd.get(nm).stop();
+			// 在第三张哈希表中去掉这个用户,表示这个用户已经不在线
+			Main.hm_usrTOthrd.remove(nm);
+			// 该客户端关闭时会发生此异常
+			System.out.println("[-]" + nm + sckt.getInetAddress() + "断开连接");
 		}
 	}
 
@@ -78,6 +82,8 @@ public class DealWithKernel extends Thread {
 			// 因为目标用户不在线,所以一定没有启动[内存消息接收线程]
 			// 即Main.hm_usrTOthrd.get(str_to)是null,不必考虑interrupt()
 		}
-		// System.out.println(Main.hm_usrTOmsg);// 测试输出
+		System.out.println("[1]表" + Main.hm_usrTOip);// 测试输出
+		System.out.println("[2表]" + Main.hm_usrTOmsg);// 测试输出
+		System.out.println("[3表]" + Main.hm_usrTOthrd);// 测试输出
 	}
 }
