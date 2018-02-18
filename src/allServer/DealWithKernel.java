@@ -4,6 +4,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.LinkedList;
 
 //[客户消息处理线程]子线程,紧跟在在[登陆请求处理线程]的成功登录之后
@@ -45,6 +50,10 @@ public class DealWithKernel extends Thread {
 				if (s.startsWith("[to")) {
 					dealSndMsg(s);// 处理发消息
 				}
+				// 客户要获取自己的资料卡
+				else if (s.startsWith("[mycard]")) {
+					dealGetCard(s);// 处理获取资料卡
+				}
 			}
 		} catch (IOException e) {
 			// 在第一张哈希表中去掉这个用户,表示这个用户已经不在线
@@ -56,6 +65,39 @@ public class DealWithKernel extends Thread {
 			// 该客户端关闭时会发生此异常
 			System.out.println("[-]" + nm + sckt.getInetAddress() + "断开连接");
 		}
+	}
+
+	// 处理获取资料卡,传入解析前的消息
+	private void dealGetCard(String s) {
+		String UsrNum = s.substring(s.indexOf("]") + 1);
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String uri = "jdbc:mysql://192.168.0.106:3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
+			String user = "root";// 用户名
+			String password = "3838438"; // 密码
+			Connection con = DriverManager.getConnection(uri, user, password);
+			PreparedStatement ps_smpl = con.prepareStatement("SELECT * FROM SmplMsg WHERE UsrNum=" + UsrNum);
+			ResultSet rs = ps_smpl.executeQuery();
+			if (rs.next()) {
+				String Name = rs.getString(3);// 获取这(唯一行)用户的用户名
+				int HeadID = rs.getInt(4);// 头像的ID号
+				int Sex = rs.getInt(5);// 性别0女1男
+				String Signature = rs.getString(6);// 个性签名
+				// 拼成字符串发送
+				String send = "[mycard]" + Name + "#" + HeadID + "#" + Sex + "#" + Signature;
+				dos.writeUTF(send);
+			} else {
+				// TODO 似乎不会发生这种情况
+				System.out.println("[!]奇异情况发生了");
+			}
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 	}
 
 	// 处理发消息,因为操作了临界资源,所以用synchronized保护
@@ -82,8 +124,8 @@ public class DealWithKernel extends Thread {
 			// 因为目标用户不在线,所以一定没有启动[内存消息接收线程]
 			// 即Main.hm_usrTOthrd.get(str_to)是null,不必考虑interrupt()
 		}
-		System.out.println("[1]表" + Main.hm_usrTOip);// 测试输出
-		System.out.println("[2表]" + Main.hm_usrTOmsg);// 测试输出
-		System.out.println("[3表]" + Main.hm_usrTOthrd);// 测试输出
+		// System.out.println("[1表]" + Main.hm_usrTOip);// 测试输出
+		// System.out.println("[2表]" + Main.hm_usrTOmsg);// 测试输出
+		// System.out.println("[3表]" + Main.hm_usrTOthrd);// 测试输出
 	}
 }
