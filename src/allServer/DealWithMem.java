@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.LinkedList;
 
-//[内存消息接收线程]子线程,和[客户消息处理线程]子线程并排
+//[内存消息接收线程],它和[客户消息处理线程]并排,紧跟在在[登陆请求处理线程]的成功登录之后
 //这个线程用来处理那些放进内存(主类中的第二张静态哈希表)中的其他客户发给自己的消息
 public class DealWithMem extends Thread {
 	Socket sckt;// 从上级线程死亡前传进来的连接好的Socket

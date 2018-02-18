@@ -159,7 +159,11 @@ class IWannaLogin extends Thread {
 			Main.hm_usrTOip.put(nm, sckt.getInetAddress().toString().substring(1));
 			System.out.println("[v]当前在线状态:" + Main.hm_usrTOip);
 			// 2:在接收消息用的主类的HashMap里引入这一项,新建一个他的消息链表
-			Main.hm_usrTOmsg.put(nm, new LinkedList<String>());
+			// 更新日志:在实现对不在线的用户发消息时,要在那里创建该用户的消息链表
+			// 所以这里要判断链表是否已经创建,没有创建(离线全程没人给自己发消息)时才创建
+			if (Main.hm_usrTOmsg.get(nm) == null) {
+				Main.hm_usrTOmsg.put(nm, new LinkedList<String>());
+			}
 			// 3:在取出内存缓存消息用的主类的HashMap里引入这一项
 			DealWithMem dwm = new DealWithMem(sckt, nm);// 新建一个[内存消息接收线程]子线程
 			dwm.start();// 启动

@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.LinkedList;
 
 //[客户消息处理线程]子线程,紧跟在在[登陆请求处理线程]的成功登录之后
 public class DealWithKernel extends Thread {
@@ -61,13 +62,21 @@ public class DealWithKernel extends Thread {
 		String str_msg = s.substring(MyTools.indexOf(s, 2, "]") + 1);// 要发送的消息,这里+1所以发来的不能为空
 		// System.out.println(str_to + "," + str_frm + "," + str_msg);// 测试输出
 		// 判断用户是否在线,做出不同的处理
-		// 用这两个哈希表判断都可以,考虑到第一张表比较小所以用了第一张(实际上第一张表现在完全可以去掉)
+		// 用第一张表(登录状况表)判断
 		if (Main.hm_usrTOip.get(str_to) != null) {
 			// 目标用户在线时,把消息写入内存中主类第二张静态哈希表的LinkedList里
 			Main.hm_usrTOmsg.get(str_to).add(str_frm + "\n\n" + str_msg);// 因为用户没法换行,所以用换行符分隔
 			Main.hm_usrTOthrd.get(str_to).interrupt();// 打断它的sleep(),让它立即为用户处理消息
 		} else {
-			System.out.println("[x]目标用户不在线");
+			System.out.println("[+mem]" + str_to + "不在线,消息暂存在服务器");
+			// 把消息写入内存中主类第二张静态哈希表的LinkedList里
+			// 注意要判断是否还没创建,没有创建时要先创建
+			if (Main.hm_usrTOmsg.get(str_to) == null) {
+				Main.hm_usrTOmsg.put(str_to, new LinkedList<String>());
+			}
+			Main.hm_usrTOmsg.get(str_to).add(str_frm + "\n\n" + str_msg);// 因为用户没法换行,所以用换行符分隔
+			// 因为目标用户不在线,所以一定没有启动[内存消息接收线程]
+			// 即Main.hm_usrTOthrd.get(str_to)是null,不必考虑interrupt()
 		}
 		// System.out.println(Main.hm_usrTOmsg);// 测试输出
 	}
