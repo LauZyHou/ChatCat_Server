@@ -46,7 +46,7 @@ public class LoginServer implements Runnable {
 			ps_prmy_smpl = con.prepareStatement("SELECT * FROM SmplMsg WHERE UsrNum=?");
 			// 服务器端Socket,用来在后面循环中建立Socket对象
 			ss = new ServerSocket(3838); // 登录服务始终使用3838端口,不必写入循环体中
-			System.out.println("[#]开始等待客户端连接...");
+			System.out.println("[登录请求管理线程]启动...");
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();// JVM加载JDBC驱动失败
 		} catch (SQLException e) {
@@ -58,7 +58,7 @@ public class LoginServer implements Runnable {
 		while (true) {
 			try {
 				sckt = ss.accept();// 阻塞以等待连接
-				System.out.println("[+]客户端地址:" + sckt.getInetAddress());
+				System.out.println("[+]尝试登录来自:" + sckt.getInetAddress());
 				// 为这个新客户建立[登陆请求处理线程]对象,启动专为这个客户服务的线程
 				new IWannaLogin(sckt, ps_smpl, ps_frnd, ps_prmy_smpl).start();
 			} catch (IOException e) {
@@ -68,7 +68,7 @@ public class LoginServer implements Runnable {
 	}// end run()
 }
 
-// [登陆请求处理线程]子线程,每个客户单独一个
+// [登陆请求处理线程],每个客户单独一个
 class IWannaLogin extends Thread {
 	// 从构造器传入的Socket连接对象
 	Socket sckt;
@@ -93,7 +93,7 @@ class IWannaLogin extends Thread {
 		this.ps_prmy_smpl = ps_prmy_smpl;// 主键索引查询(好友信息)
 	}
 
-	// [登陆请求处理线程]子线程运行
+	// [登陆请求处理线程]运行
 	@Override
 	public void run() {
 		String nm = null;// 账户名
@@ -169,7 +169,7 @@ class IWannaLogin extends Thread {
 			// 传入登录者的账户名,以在客户端关闭时断开连接前从哈希表中去除对应的项目
 			new DealWithKernel(sckt, nm).start();
 		} catch (IOException e) {
-			// 当客户端还没点过登录按钮,就关闭了窗口或者以其它方式强行结束了客户端程序时
+			// 当客户端还没成功登录,就关闭了窗口或者以其它方式强行结束了客户端程序时
 			System.out.println("[-]放弃登录来自:" + sckt.getInetAddress());
 		} catch (SQLException e) {
 			e.printStackTrace();// PreparedStatement对象相关
