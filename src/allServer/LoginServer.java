@@ -166,7 +166,8 @@ class IWannaLogin extends Thread {
 			Main.hm_usrTOthrd.put(nm, dwm);// 将引用传入
 			// 4:在[登陆请求处理线程]子线程结束之前,为这个用户新开一个[客户消息处理线程]子线程
 			// 传入连接好的Socket对象,以保留这个验证登录成功的TCP连接
-			new DealWithKernel(sckt).start();
+			// 传入登录者的账户名,以在客户端关闭时断开连接前从哈希表中去除对应的项目
+			new DealWithKernel(sckt, nm).start();
 		} catch (IOException e) {
 			// 当客户端还没点过登录按钮,就关闭了窗口或者以其它方式强行结束了客户端程序时
 			System.out.println("[-]放弃登录来自:" + sckt.getInetAddress());
