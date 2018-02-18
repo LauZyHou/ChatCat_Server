@@ -148,6 +148,7 @@ class IWannaSignUp extends Thread {
 				}
 			}
 			// 运行至此,说明注册成功
+			System.out.println("[v]成功注册来自:" + sckt.getInetAddress());
 		} catch (IOException e) {
 			// 当客户端还没成功注册,就关闭了窗口或者以其它方式强行结束了客户端程序时发生此异常
 			System.out.println("[-]放弃注册来自:" + sckt.getInetAddress());
