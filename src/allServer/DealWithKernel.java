@@ -54,6 +54,10 @@ public class DealWithKernel extends Thread {
 				else if (s.startsWith("[mycard]")) {
 					dealGetCard(s);// 处理获取资料卡
 				}
+				// 客户要把新的个人资料写入数据库
+				else if (s.startsWith("[changecard]")) {
+					dealChngCard(s);// 处理修改个人资料
+				}
 			}
 		} catch (IOException e) {
 			// 在第一张哈希表中去掉这个用户,表示这个用户已经不在线
@@ -67,7 +71,37 @@ public class DealWithKernel extends Thread {
 		}
 	}
 
-	// 处理获取资料卡,传入解析前的消息
+	// 处理修改个人资料,完整的执行sql语句之间互不影响,不需synchronized保护
+	private void dealChngCard(String s) {
+		String Name = s.substring(s.indexOf("]") + 1, s.indexOf("#"));
+		String HeadID = s.substring(s.indexOf("#") + 1, MyTools.indexOf(s, 2, "#"));
+		String Sex = s.substring(MyTools.indexOf(s, 2, "#") + 1, s.lastIndexOf("#"));
+		String Signature = s.substring(s.lastIndexOf("#") + 1);
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String uri = "jdbc:mysql://192.168.0.106:3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
+			String user = "root";// 用户名
+			String password = "3838438"; // 密码
+			Connection con = DriverManager.getConnection(uri, user, password);
+			// 更新数据库表
+			PreparedStatement ps_smpl = con.prepareStatement("UPDATE SmplMsg SET Name='" + Name + "',HeadID=" + HeadID
+					+ ",Sex=" + Sex + ",Signature='" + Signature + "' WHERE UsrNum=" + nm);
+			int rs = ps_smpl.executeUpdate();
+			if (rs == 1) {
+				dos.writeUTF("[changecard]success");// 成功信息
+			} else {
+				dos.writeUTF("[changecard]failed");// 失败信息
+			}
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// 处理获取资料卡,传入解析前的消息// TODO UsrNum不需要传入
 	private void dealGetCard(String s) {
 		String UsrNum = s.substring(s.indexOf("]") + 1);
 		try {
