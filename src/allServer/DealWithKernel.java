@@ -51,8 +51,8 @@ public class DealWithKernel extends Thread {
 					dealSndMsg(s);// 处理发消息
 				}
 				// 客户要获取自己的资料卡
-				else if (s.startsWith("[mycard]")) {
-					dealGetCard(s);// 处理获取资料卡
+				else if (s.equals("[mycard]")) {
+					dealGetCard();// 处理获取资料卡
 				}
 				// 客户要把新的个人资料写入数据库
 				else if (s.startsWith("[changecard]")) {
@@ -101,16 +101,15 @@ public class DealWithKernel extends Thread {
 		}
 	}
 
-	// 处理获取资料卡,传入解析前的消息// TODO UsrNum不需要传入
-	private void dealGetCard(String s) {
-		String UsrNum = s.substring(s.indexOf("]") + 1);
+	// 处理获取资料卡
+	private void dealGetCard() {
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
 			String uri = "jdbc:mysql://192.168.0.106:3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
 			String user = "root";// 用户名
 			String password = "3838438"; // 密码
 			Connection con = DriverManager.getConnection(uri, user, password);
-			PreparedStatement ps_smpl = con.prepareStatement("SELECT * FROM SmplMsg WHERE UsrNum=" + UsrNum);
+			PreparedStatement ps_smpl = con.prepareStatement("SELECT * FROM SmplMsg WHERE UsrNum=" + nm);
 			ResultSet rs = ps_smpl.executeQuery();
 			if (rs.next()) {
 				String Name = rs.getString(3);// 获取这(唯一行)用户的用户名
