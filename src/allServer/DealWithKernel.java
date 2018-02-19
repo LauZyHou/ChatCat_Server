@@ -56,7 +56,7 @@ public class DealWithKernel extends Thread {
 			while (true) {
 				s = dis.readUTF();// 阻塞发生之处
 				System.out.println("[+][接收]" + s);// 测试输出
-				dos.writeUTF("[服务器端]接收到了!");// 测试回应
+				// dos.writeUTF("[服务器端]接收到了!");// 测试回应
 				/* 对于不同的消息头,服务器做不同的事情 */
 				// 客户要向其它客户发送消息
 				if (s.startsWith("[to")) {
@@ -70,6 +70,10 @@ public class DealWithKernel extends Thread {
 				else if (s.startsWith("[changecard]")) {
 					dealChngCard(s);// 处理修改个人资料
 				}
+				// 客户添加好友时需要查找用户资料
+				else if (s.startsWith("[addFrnd_")) {
+					dealFindMsg(s);// 处理查找资料
+				}
 			}
 		} catch (IOException e) {
 			// 在第一张哈希表中去掉这个用户,表示这个用户已经不在线
@@ -80,6 +84,57 @@ public class DealWithKernel extends Thread {
 			Main.hm_usrTOthrd.remove(nm);
 			// 该客户端关闭时会发生此异常
 			System.out.println("[-]" + nm + sckt.getInetAddress() + "断开连接");
+		}
+	}
+
+	// 处理添加用户时的查找资料,只允许返回账号,昵称,性别
+	private void dealFindMsg(String s) {
+		// 按账号查找
+		if (s.startsWith("[addFrnd_U]")) {
+			String UsrNum = s.substring(s.indexOf("]") + 1);
+			try {
+				PreparedStatement ps = con
+						.prepareStatement("SELECT UsrNum,Name,Sex From SmplMsg WHERE UsrNum=" + UsrNum);
+				ResultSet rs = ps.executeQuery();
+				// 有则只有一行
+				if (rs.next()) {
+					dos.writeUTF("[addFrnd]" + rs.getString(1) + "#" + rs.getString(2) + "#" + rs.getString(3) + "##");
+				} else {
+					dos.writeUTF("[addFrnd_None]");
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		// 按昵称查找
+		else if (s.startsWith("[addFrnd_N]")) {
+			String Name = s.substring(s.indexOf("]") + 1);
+			try {
+				// 前后两个%,包含匹配
+				PreparedStatement ps = con
+						.prepareStatement("SELECT UsrNum,Name,Sex From SmplMsg WHERE Name LIKE '%" + Name + "%'");
+				ResultSet rs = ps.executeQuery();
+				// 有可能不止一行,用一个布尔值记录
+				boolean have = false;
+				// 用于拼接多个结果
+				String str_rst = "";
+				while (rs.next()) {
+					have = true;
+					// 每个拼接结果用两个"#"
+					str_rst = str_rst + rs.getString(1) + "#" + rs.getString(2) + "#" + rs.getString(3) + "##";
+				}
+				if (have) {
+					dos.writeUTF("[addFrnd]" + str_rst);
+				} else {
+					dos.writeUTF("[addFrnd_None]");
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
