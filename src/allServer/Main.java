@@ -16,6 +16,8 @@ public class Main {
 	public static HashMap<String, DealWithMem> hm_usrTOthrd = new HashMap<String, DealWithMem>();
 	// 第四张哈希表记录<目标用户账号,存向该用户发送请求的所有账号组成的TreeSet>,TreeSet可以保证有序
 	public static HashMap<String, TreeSet<String>> hm_usrTOts = new HashMap<String, TreeSet<String>>();
+	// 第五张哈希表记录<目标用户账号,存向该用户发的所有提示消息组成的TreeSet>,TreeSet可以保证有序
+	public static HashMap<String, TreeSet<String>> hm_usrTOprmpt = new HashMap<String, TreeSet<String>>();
 
 	public static void main(String[] args) {
 		// [登陆请求管理线程]

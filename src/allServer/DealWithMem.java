@@ -8,6 +8,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.LinkedList;
+import java.util.TreeSet;
 
 //[内存消息接收线程],它和[客户消息处理线程]并排,紧跟在在[登陆请求处理线程]的成功登录之后
 //这个线程用来处理那些放进内存(主类中的第二张静态哈希表)中的其他客户发给自己的消息
@@ -44,14 +45,13 @@ public class DealWithMem extends Thread {
 		}
 	}
 
-	// 虽然都操作了第三张哈希表,但这组线程只会操作自己的LinkedList,不必synchronized
 	@Override
 	public void run() {
 		while (true) {
 			try {
 				dealWithMsg();// 处理发给自己的消息
 				dealWithAdd();// 处理发给自己的好友请求
-
+				dealWithPrompt();// 处理提示/刷新消息
 				// 之所以要做第三张哈希表就是因为这个sleep(),
 				// 放进哈希表里让这个线程的引用对DealWithKernel可见
 				// 则对方可以在写完后立即interrupt()这个线程
@@ -67,6 +67,27 @@ public class DealWithMem extends Thread {
 		} // end while
 	}
 
+	// 处理提示/刷新消息:客户端可能提示消息,此外根据服务器传的信息刷新自己的某些组件
+	// 每个线程只处理自己在第五张哈希表中的项目,不需要synchronized保护
+	// synchronized保护的是clear()和dealWithAdd()里的add()
+	private synchronized void dealWithPrompt() throws IOException {
+		// 未建立或者建立了但是为空时都不需要刷新
+		if (Main.hm_usrTOprmpt.get(nm) == null || Main.hm_usrTOprmpt.get(nm).isEmpty())
+			return;
+		// 执行至此说明有消息,但这么多消息实际上客户端只要刷新一次就好了!
+		// 因为要提示的服务器或数据库里的信息更新并不是在下面的for循环过程中的
+		// 而是早就更新完了,所以把"刷新"和"提示"在这个方法中分开
+		// 不妨用"[refresh]"表示要刷新
+		// 用"[!]提示"的方式表示要显示提示
+		dos.writeUTF("[refresh]");// 刷新一次
+		for (String s : Main.hm_usrTOprmpt.get(nm)) {
+			dos.writeUTF("[!]" + s);// 但每次都要提示
+		}
+		// 清空TreeSet,实际上这样做可能会和其它写入TreeSet者冲突,所以需要synchronized
+		// 对于这一个线程对象(成为锁),不同的synchronized方法也不可以并发/并行执行!
+		Main.hm_usrTOprmpt.get(nm).clear();
+	}
+
 	// 处理发给自己的好友请求,因为可能操作不止自己的哈希表,所以用synchronized
 	private synchronized void dealWithAdd() throws SQLException {
 		if (Main.hm_usrTOts.get(nm) == null)// 从来没人发给过自己好友请求
@@ -75,7 +96,6 @@ public class DealWithMem extends Thread {
 			return;// 直接结束
 		// 遍历这个TreeSet中,对于记录的所有请求好友者
 		for (String s : Main.hm_usrTOts.get(nm)) {
-			// TODO
 			// 看看自己有没有向他发过请求,(谨防空指针异常,用短路判断)
 			if (Main.hm_usrTOts.get(s) != null && Main.hm_usrTOts.get(s).contains(nm)) {
 				// 既然双方都向对方发过请求,两者直接成为好友
@@ -89,6 +109,20 @@ public class DealWithMem extends Thread {
 				int ok = ps.executeUpdate();// 成功成为好友将1行受影响
 				if (ok != 1)// 留给开发者提醒
 					System.out.println("[!]自动成为好友出问题");
+				// 向双方在第五张哈希表中对应的TreeSet,写入成为好友的提示消息
+				// 如果未建立项,当场建立,这也是用synchronized保护到的地方
+				if (Main.hm_usrTOprmpt.get(nm) == null) {
+					Main.hm_usrTOprmpt.put(nm, new TreeSet<String>());
+				}
+				if (Main.hm_usrTOprmpt.get(s) == null) {
+					Main.hm_usrTOprmpt.put(s, new TreeSet<String>());
+				}
+				Main.hm_usrTOprmpt.get(nm).add("你和" + s + "成为好友");
+				Main.hm_usrTOprmpt.get(s).add("你和" + nm + "成为好友");
+				// 最终,把这两个好友请求从内存(第四张哈希表)中清除
+				// 不然会不停地成为好友,数据表项(竟然可以重复)越来越多
+				Main.hm_usrTOts.get(s).remove(nm);
+				Main.hm_usrTOts.get(nm).remove(s);
 			}
 		}
 	}
