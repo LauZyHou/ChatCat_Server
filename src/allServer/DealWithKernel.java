@@ -10,6 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedList;
+import java.util.TreeSet;
 
 //[客户消息处理线程]子线程,紧跟在在[登陆请求处理线程]的成功登录之后
 public class DealWithKernel extends Thread {
@@ -74,6 +75,10 @@ public class DealWithKernel extends Thread {
 				else if (s.startsWith("[addFrnd_")) {
 					dealFindMsg(s);// 处理查找资料
 				}
+				// 客户要添加指定账号的好友
+				else if (s.startsWith("[add]")) {
+					dealAdd(s);// 处理添加指定的好友
+				}
 			}
 		} catch (IOException e) {
 			// 在第一张哈希表中去掉这个用户,表示这个用户已经不在线
@@ -84,6 +89,41 @@ public class DealWithKernel extends Thread {
 			Main.hm_usrTOthrd.remove(nm);
 			// 该客户端关闭时会发生此异常
 			System.out.println("[-]" + nm + sckt.getInetAddress() + "断开连接");
+		}
+	}
+
+	// 处理添加指定账户的好友,synchronized保证插入TreeSet的顺序,还保护了TreeSet的建立
+	private synchronized void dealAdd(String s) {
+		// 都解析成数字
+		int myNum = Integer.parseInt(nm);
+		int toNum = Integer.parseInt(s.substring(s.indexOf("]") + 1));
+		PreparedStatement ps = null;
+		try {
+			if (myNum < toNum) {
+				// 这里不用'*'仅仅是节省解析'*'的那一点点时间
+				ps = con.prepareStatement("SELECT Usr1 FROM FrndMsg WHERE Usr1=" + myNum + " AND Usr2=" + toNum);
+			} else {
+				ps = con.prepareStatement("SELECT Usr1 FROM FrndMsg WHERE Usr1=" + toNum + " AND Usr2=" + myNum);
+			}
+			ResultSet rs = ps.executeQuery();
+			// 有则只有一行
+			if (rs.next()) {
+				dos.writeUTF("[youradd][x]" + toNum + "已经是你的好友");
+			} else {
+				dos.writeUTF("[youradd][v]" + "请求已发送");
+				// 未建立时先建立,总之存到对应用户的TreeSet里
+				// 注意!每个用户的线程无权在这个哈希表里建立自己的项!只能通过别人发给自己请求来建立
+				// 在DealWithMem中将对自己的项周期性地判断、取出和使用
+				if (Main.hm_usrTOts.get("" + toNum) == null) {
+					Main.hm_usrTOts.put("" + toNum, new TreeSet<String>());
+				}
+				Main.hm_usrTOts.get("" + toNum).add("" + myNum);
+				System.out.println(Main.hm_usrTOts);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
