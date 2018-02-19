@@ -20,6 +20,8 @@ public class DealWithKernel extends Thread {
 	DataOutputStream dos;
 	// 上级线程死亡前传进来的自己的账户名
 	String nm;
+	// 加载一次数据库连接,供后面多次使用
+	Connection con;
 
 	// 构造器
 	public DealWithKernel(Socket sckt, String nm) {
@@ -30,7 +32,17 @@ public class DealWithKernel extends Thread {
 			// 重建输入输出流
 			dis = new DataInputStream(sckt.getInputStream());
 			dos = new DataOutputStream(sckt.getOutputStream());
+			// 加载一次数据库连接,供后面多次使用
+			Class.forName("com.mysql.jdbc.Driver");
+			String uri = "jdbc:mysql://192.168.0.106:3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
+			String user = "root";// 用户名
+			String password = "3838438"; // 密码
+			con = DriverManager.getConnection(uri, user, password);
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -78,11 +90,6 @@ public class DealWithKernel extends Thread {
 		String Sex = s.substring(MyTools.indexOf(s, 2, "#") + 1, s.lastIndexOf("#"));
 		String Signature = s.substring(s.lastIndexOf("#") + 1);
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			String uri = "jdbc:mysql://192.168.0.106:3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
-			String user = "root";// 用户名
-			String password = "3838438"; // 密码
-			Connection con = DriverManager.getConnection(uri, user, password);
 			// 更新数据库表
 			PreparedStatement ps_smpl = con.prepareStatement("UPDATE SmplMsg SET Name='" + Name + "',HeadID=" + HeadID
 					+ ",Sex=" + Sex + ",Signature='" + Signature + "' WHERE UsrNum=" + nm);
@@ -92,8 +99,6 @@ public class DealWithKernel extends Thread {
 			} else {
 				dos.writeUTF("[changecard]failed");// 失败信息
 			}
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -104,11 +109,6 @@ public class DealWithKernel extends Thread {
 	// 处理获取资料卡
 	private void dealGetCard() {
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			String uri = "jdbc:mysql://192.168.0.106:3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
-			String user = "root";// 用户名
-			String password = "3838438"; // 密码
-			Connection con = DriverManager.getConnection(uri, user, password);
 			PreparedStatement ps_smpl = con.prepareStatement("SELECT * FROM SmplMsg WHERE UsrNum=" + nm);
 			ResultSet rs = ps_smpl.executeQuery();
 			if (rs.next()) {
@@ -123,8 +123,6 @@ public class DealWithKernel extends Thread {
 				// TODO 似乎不会发生这种情况
 				System.out.println("[!]奇异情况发生了");
 			}
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
