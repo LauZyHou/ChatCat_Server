@@ -6,6 +6,7 @@ import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.TreeSet;
@@ -70,7 +71,7 @@ public class DealWithMem extends Thread {
 	// 处理提示/刷新消息:客户端可能提示消息,此外根据服务器传的信息刷新自己的某些组件
 	// 每个线程只处理自己在第五张哈希表中的项目,不需要synchronized保护
 	// synchronized保护的是clear()和dealWithAdd()里的add()
-	private synchronized void dealWithPrompt() throws IOException {
+	private synchronized void dealWithPrompt() throws IOException, SQLException {
 		// 未建立或者建立了但是为空时都不需要刷新
 		if (Main.hm_usrTOprmpt.get(nm) == null || Main.hm_usrTOprmpt.get(nm).isEmpty())
 			return;
@@ -79,7 +80,7 @@ public class DealWithMem extends Thread {
 		// 而是早就更新完了,所以把"刷新"和"提示"在这个方法中分开
 		// 不妨用"[refresh]"表示要刷新
 		// 用"[!]提示"的方式表示要显示提示
-		dos.writeUTF("[refresh]");// 刷新一次
+		dos.writeUTF("[refresh]" + getRefreshMsg());// 刷新一次,传入getRefreshMsg()获取的更新信息
 		for (String s : Main.hm_usrTOprmpt.get(nm)) {
 			dos.writeUTF("[!]" + s);// 但每次都要提示
 		}
@@ -142,5 +143,30 @@ public class DealWithMem extends Thread {
 			// 处理完成把自己的消息链表清空
 			ll.clear();
 		}
+	}
+
+	// 获得为客户端更新信息用的信息字符串
+	private String getRefreshMsg() throws SQLException {
+		// 查询好友账号的sql语句对象
+		PreparedStatement ps_frnd = con.prepareStatement(
+				"SELECT Usr1 FROM FrndMsg WHERE Usr2=" + nm + " UNION " + "SELECT Usr2 FROM FrndMsg WHERE Usr1=" + nm);
+		// 通过好友账号查询详细信息的sql语句对象
+		PreparedStatement ps_frndmsg = con.prepareStatement("SELECT * FROM SmplMsg WHERE UsrNum=?");
+		// 先查出所有账号来
+		ResultSet rs_frnd = ps_frnd.executeQuery();
+		// 准备好要返回的字符串
+		String str_rtn = "";
+		// 对于每个账号
+		while (rs_frnd.next()) {
+			// 替换掉'?'
+			ps_frndmsg.setString(1, "" + rs_frnd.getInt(1));
+			// 执行查询
+			ResultSet rs_frndmsg = ps_frndmsg.executeQuery();
+			// 进到第一行
+			rs_frndmsg.next();
+			// 添加到要返回的字符串上
+			str_rtn = str_rtn + "#" + rs_frndmsg.getInt(1) + "," + rs_frndmsg.getString(3) + "," + rs_frndmsg.getInt(4);
+		}
+		return str_rtn;
 	}
 }
