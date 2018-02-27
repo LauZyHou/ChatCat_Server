@@ -31,7 +31,7 @@ public class SignServer implements Runnable {
 			// jdbc:mysql://ip地址:端口号/要连接的数据库名?其它选项
 			// useSSL参数指明数据通道是否要加密处理
 			// characterEncoding参数指明连接编码,要和数据库编码,数据库表的编码,数据库系统的编码一致
-			String uri = "jdbc:mysql://192.168.0.106:3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
+			String uri = "jdbc:mysql://" + Main.DBIp + ":3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
 			String user = "root";// 用户名
 			String password = "3838438"; // 密码
 			// 和指定的数据库建立连接(连接信息字符串,用户名,密码)
@@ -39,7 +39,7 @@ public class SignServer implements Runnable {
 			// 使用PreparedStatement时,其构造方法中直接传入要执行的sql语句,暂时不确定值的地方使用问号
 			// 所以execute(),executeQuery()和executeUpdate()不再需要参数
 			ps_smpl = con.prepareStatement("SELECT * FROM SmplMsg WHERE UsrNum=?");// 检查
-			ps_insrt = con.prepareStatement("INSERT INTO SmplMsg VALUES (?,?,?,?)");// 插入
+			ps_insrt = con.prepareStatement("INSERT INTO SmplMsg VALUES (?,?,?,?,?,?)");// 插入
 			// 服务器端Socket,用来在后面循环中建立Socket对象
 			ss = new ServerSocket(3939); // 注册服务使用3939端口
 			System.out.println("[注册请求管理线程]启动...");
@@ -136,6 +136,9 @@ class IWannaSignUp extends Thread {
 					ps_insrt.setString(2, Passwd);
 					ps_insrt.setString(3, Name);
 					ps_insrt.setString(4, HeadID);
+					// TODO 目前默认女,默认个性签名
+					ps_insrt.setString(5, "0");
+					ps_insrt.setString(6, "这个人太懒了,没有个性签名");
 					// 执行这条语句,往数据库SmplMsg表里里插入用户提供的注册信息
 					int ok = ps_insrt.executeUpdate();// 注意使用的是executeUpdate()方法
 					// 返回的数字是受影响的行数,当不为0(即是1)时,说明插入成功,即注册成功

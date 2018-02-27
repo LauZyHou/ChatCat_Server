@@ -33,7 +33,7 @@ public class LoginServer implements Runnable {
 			// jdbc:mysql://ip地址:端口号/要连接的数据库名?其它选项
 			// useSSL参数指明数据通道是否要加密处理
 			// characterEncoding参数指明连接编码,要和数据库编码,数据库表的编码,数据库系统的编码一致
-			String uri = "jdbc:mysql://192.168.0.106:3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
+			String uri = "jdbc:mysql://" + Main.DBIp + ":3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
 			String user = "root";// 用户名
 			String password = "3838438"; // 密码
 			// 和指定的数据库建立连接(连接信息字符串,用户名,密码)

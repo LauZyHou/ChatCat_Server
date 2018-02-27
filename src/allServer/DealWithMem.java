@@ -33,7 +33,7 @@ public class DealWithMem extends Thread {
 			this.dos = new DataOutputStream(sckt.getOutputStream());
 			// 加载一次数据库连接,供后面多次使用
 			Class.forName("com.mysql.jdbc.Driver");
-			String uri = "jdbc:mysql://192.168.0.106:3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
+			String uri = "jdbc:mysql://" + Main.DBIp + ":3306/ChatCatDB?useSSL=true&characterEncoding=utf8";
 			String user = "root";// 用户名
 			String password = "3838438"; // 密码
 			con = DriverManager.getConnection(uri, user, password);
