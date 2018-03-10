@@ -141,7 +141,10 @@ class IWannaLogin extends Thread {
 						if (rs_prmy_smpl.next() == true) {
 							String frndName = rs_prmy_smpl.getString(3);// 第3列:该好友的网名
 							int frndHeadID = rs_prmy_smpl.getInt(4);// 第4列:该好友的头像ID
-							str_send = str_send + "#" + frndUsrNum + "," + frndName + "," + frndHeadID;// 拼给要发送的字符串
+							String frndSgntr = rs_prmy_smpl.getString(6);// 第6列:该好友的个性签名
+							// 拼给要发送的字符串
+							str_send = str_send + "#" + frndUsrNum + "&" + frndName + "&" + frndHeadID + "&"
+									+ frndSgntr;
 						}
 					}
 					// System.out.println(str_send);

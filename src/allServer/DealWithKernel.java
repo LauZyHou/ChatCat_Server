@@ -123,7 +123,7 @@ public class DealWithKernel extends Thread {
 				}
 				Main.hm_usrTOprmpt.get("" + toNum).add("你被" + nm + "删除了");
 			} else {
-				System.out.println("[!]删除好友出现问题,检查数据库表是否有重复行");
+				System.out.println("[!]删除好友出现问题,在函数dealWithDlt()");
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
