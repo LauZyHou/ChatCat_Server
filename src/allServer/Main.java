@@ -7,7 +7,7 @@ import java.util.TreeSet;
 //主类
 public class Main {
 	// 数据库内网ip
-	public static String DBIp = "192.168.1.100";
+	public static String DBIp = "192.168.1.109";
 
 	/* 提供给[登录请求管理线程]及其分支使用的资源 */
 	// 主类中的静态哈希映射表,记录登录者的<账号,ip地址>映射,在主类加载时即刻加载

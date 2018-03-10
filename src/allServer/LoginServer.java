@@ -144,6 +144,7 @@ class IWannaLogin extends Thread {
 							str_send = str_send + "#" + frndUsrNum + "," + frndName + "," + frndHeadID;// 拼给要发送的字符串
 						}
 					}
+					// System.out.println(str_send);
 					// 把最后拼出来的要发送的字符串发送给客户端
 					this.dos.writeUTF(str_send);
 				}

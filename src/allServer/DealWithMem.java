@@ -167,6 +167,7 @@ public class DealWithMem extends Thread {
 			// 添加到要返回的字符串上
 			str_rtn = str_rtn + "#" + rs_frndmsg.getInt(1) + "," + rs_frndmsg.getString(3) + "," + rs_frndmsg.getInt(4);
 		}
+		// System.out.println(str_rtn);
 		return str_rtn;
 	}
 }

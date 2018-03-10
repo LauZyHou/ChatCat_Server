@@ -79,6 +79,10 @@ public class DealWithKernel extends Thread {
 				else if (s.startsWith("[add]")) {
 					dealAdd(s);// 处理添加指定的好友
 				}
+				// 客户需要指定好友的资料以建立资料卡
+				else if (s.startsWith("[msg]")) {
+					dealGetFrndMsg(s);// 处理获取好友资料卡
+				}
 			}
 		} catch (IOException e) {
 			// 在第一张哈希表中去掉这个用户,表示这个用户已经不在线
@@ -89,6 +93,29 @@ public class DealWithKernel extends Thread {
 			Main.hm_usrTOthrd.remove(nm);
 			// 该客户端关闭时会发生此异常
 			System.out.println("[-]" + nm + sckt.getInetAddress() + "断开连接");
+		}
+	}
+
+	// 处理获取好友资料卡
+	private void dealGetFrndMsg(String s) {
+		// 解析账户名
+		String goalFrnd = s.substring(s.indexOf("]") + 1);
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement("SELECT Name,HeadID,Sex,Signature FROM SmplMsg WHERE UsrNum=" + goalFrnd);
+			ResultSet rs = ps.executeQuery();
+			// 有则只有一行
+			if (rs.next()) {
+				// 回送给客户端
+				dos.writeUTF("[frndMsg]" + goalFrnd + "#" + rs.getString(1) + "#" + rs.getInt(2) + "#" + rs.getInt(3)
+						+ "#" + rs.getString(4));
+			} else {
+				// FIXME 无该用户异常
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
