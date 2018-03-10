@@ -83,6 +83,10 @@ public class DealWithKernel extends Thread {
 				else if (s.startsWith("[msg]")) {
 					dealGetFrndMsg(s);// 处理获取好友资料卡
 				}
+				// 客户需要删除指定的好友
+				else if (s.startsWith("[dltFrnd]")) {
+					dealWithDlt(s);// 处理要删除好友
+				}
 			}
 		} catch (IOException e) {
 			// 在第一张哈希表中去掉这个用户,表示这个用户已经不在线
@@ -93,6 +97,36 @@ public class DealWithKernel extends Thread {
 			Main.hm_usrTOthrd.remove(nm);
 			// 该客户端关闭时会发生此异常
 			System.out.println("[-]" + nm + sckt.getInetAddress() + "断开连接");
+		}
+	}
+
+	// 处理要删除好友
+	private void dealWithDlt(String s) {
+		// 都解析成数字
+		int myNum = Integer.parseInt(nm);
+		int toNum = Integer.parseInt(s.substring(s.indexOf("]") + 1));
+		PreparedStatement ps = null;
+		try {
+			if (myNum < toNum)
+				ps = con.prepareStatement("DELETE FROM FrndMsg WHERE Usr1=" + myNum + " AND Usr2=" + toNum);
+			else
+				ps = con.prepareStatement("DELETE FROM FrndMsg WHERE Usr1=" + toNum + " AND Usr1=" + myNum);
+			int rs = ps.executeUpdate();
+			if (rs == 1) {
+				// 删除成功时通过内存消息接收线程来刷新和提示客户
+				if (Main.hm_usrTOprmpt.get(nm) == null) {
+					Main.hm_usrTOprmpt.put(nm, new TreeSet<String>());
+				}
+				Main.hm_usrTOprmpt.get(nm).add("成功删除" + toNum);
+				if (Main.hm_usrTOprmpt.get("" + toNum) == null) {
+					Main.hm_usrTOprmpt.put("" + toNum, new TreeSet<String>());
+				}
+				Main.hm_usrTOprmpt.get("" + toNum).add("你被" + nm + "删除了");
+			} else {
+				System.out.println("[!]删除好友出现问题,检查数据库表是否有重复行");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
 	}
 
