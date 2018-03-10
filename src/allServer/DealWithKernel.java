@@ -87,6 +87,10 @@ public class DealWithKernel extends Thread {
 				else if (s.startsWith("[dltFrnd]")) {
 					dealWithDlt(s);// 处理要删除好友
 				}
+				// 客户要批量删除好友
+				else if (s.startsWith("[dltManyFrnd]")) {
+					dealManyDlt(s);// 处理批量删除好友
+				}
 			}
 		} catch (IOException e) {
 			// 在第一张哈希表中去掉这个用户,表示这个用户已经不在线
@@ -97,6 +101,52 @@ public class DealWithKernel extends Thread {
 			Main.hm_usrTOthrd.remove(nm);
 			// 该客户端关闭时会发生此异常
 			System.out.println("[-]" + nm + sckt.getInetAddress() + "断开连接");
+		}
+	}
+
+	// 客户要批量删除好友
+	private void dealManyDlt(String s) {
+		// 自己的账号
+		int myNum = Integer.parseInt(nm);
+		// 去除消息头
+		s = s.substring(s.indexOf("]") + 1);
+		// 分割出各个要删除的好友账号
+		String[] splitNum = s.split("#");
+		PreparedStatement ps = null;
+		try {
+			boolean isSuccess = true;// 指示是否全部删除成功
+			int toNum;// 记录当前要删除的好友账号
+			// 对于每个需要删除的好友
+			for (String toNumStr : splitNum) {
+				// 转成数字
+				toNum = Integer.parseInt(toNumStr);
+				if (myNum < toNum)
+					ps = con.prepareStatement("DELETE FROM FrndMsg WHERE Usr1=" + myNum + " AND Usr2=" + toNum);
+				else
+					ps = con.prepareStatement("DELETE FROM FrndMsg WHERE Usr1=" + toNum + " AND Usr1=" + myNum);
+				int rs = ps.executeUpdate();
+				// 这个好友删除成功
+				if (rs == 1) {
+					// 通知这个好友
+					if (Main.hm_usrTOprmpt.get("" + toNum) == null) {
+						Main.hm_usrTOprmpt.put("" + toNum, new TreeSet<String>());
+					}
+					Main.hm_usrTOprmpt.get("" + toNum).add("你被" + nm + "删除了");
+				} else// 不是"1行受影响时应当是有问题的"
+					isSuccess = false;
+			}
+			// 如果全部成功,则认为批量删除成功
+			if (isSuccess) {
+				// 删除成功时通过内存消息接收线程来刷新和提示客户
+				if (Main.hm_usrTOprmpt.get(nm) == null) {
+					Main.hm_usrTOprmpt.put(nm, new TreeSet<String>());
+				}
+				Main.hm_usrTOprmpt.get(nm).add("批量删除成功");
+			} else {
+				System.out.println("[!]删除好友出现问题,在函数dealManyDlt()");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
 	}
 
