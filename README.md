@@ -1,5 +1,5 @@
 # CatCat聊天服务端
-ChatCat聊天(服务端)，Swing+Socket(TCP)，JavaSE课程项目。
+ChatCat聊天(服务端)，Swing+Socket(TCP)+MySQL，JavaSE课程项目。
 ## 主要界面展示
 ![](https://i.imgur.com/3MIkpZY.jpg)
 ## 开发与备注日志
