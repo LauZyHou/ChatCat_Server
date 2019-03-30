@@ -8,4 +8,4 @@ ChatCat聊天(服务端)，Swing+Socket(TCP)+MySQL，JavaSE课程项目。
 <br>
 【2】ChatCat的客户端、数据库、服务端分离在不同的主机上，需要一台路由器建立局域网，在局域网内实现多线程聊天。
 <br>
-【3】客户端与数据库见[ChatCat聊天客户端](https://github.com/LauZyHou/ChatCat_Server)。
+【3】客户端与数据库备份见[ChatCat聊天客户端](https://github.com/LauZyHou/ChatCat_Client)。
